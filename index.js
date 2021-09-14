@@ -1,18 +1,17 @@
-const express       = require('express');           // Import express
-const bodyParser    = require('body-parser');       // Import Body parser
-const mongoose      = require('mongoose');          // Import Mongoose
+const express           = require('express');           // Import express
+const userRouter        = require('./Routes/user');
+const horrorRouter      = require('./Routes/horror');
+require('./db/db');
+require('dotenv').config();
 
 // Initialise the app
 const app = express();
 
-// Connect to Mongoose and set connection variable
-mongoose.connect('mongodb://localhost/resthub');
-mongoose.Promise = global.Promise;
-
 app.use(express.static('public'));
 app.use(express.json());
 
-app.use('/api',require('./Routes/api'));
+app.use('/api', userRouter);
+app.use('/api', horrorRouter);
 
 // error handling middleware
 app.use(function(err,req,res,next){
