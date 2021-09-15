@@ -10,6 +10,36 @@ exports.index = function (req, res, next) {
     }).catch(next);
 };
 
+// Return logged in user
+exports.me = function (req, res, next) {
+    res.send(req.user);
+}
+
+// Logout user token
+exports.logout = async function (req, res, next) {
+    try {
+        req.user.tokens = req.user.tokens.filter((token) => {
+            return token.token != req.token
+        })
+        await req.user.save()
+        res.send()
+    } catch (error) {
+        res.status(500).send(error)
+    }
+}
+
+// Logout user all token
+exports.logoutall = async function (req, res, next) {
+    try {
+        req.user.tokens.splice(0, req.user.tokens.length)
+        await req.user.save()
+        res.send()
+    } catch (error) {
+        res.status(500).send(error)
+    }
+}
+
+
 // Handle create user info
 exports.new = async function (req, res, next) {
     // User.create(req.body).then(function(user){

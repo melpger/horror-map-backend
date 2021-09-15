@@ -11,6 +11,15 @@ router.route('/user')
     .get    (auth, userController.index)
     .post   (userController.new);
 
+router.route('/user/me')
+    .get    (auth, userController.me)
+
+router.route('/user/me/logout')
+    .post    (auth, userController.logout)
+
+router.route('/user/me/logoutall')
+    .post    (auth, userController.logoutall)
+
 router.route('/user/login')
     .post   (userController.login);
 
