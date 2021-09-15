@@ -11,19 +11,27 @@ exports.index = function (req, res, next) {
 };
 
 // Handle create user info
-exports.new = function (req, res, next) {
+exports.new = async function (req, res, next) {
     // User.create(req.body).then(function(user){
     //     res.send(user);
     // }).catch(next);
-
-    // Might delete this since the one using the api should be the one responsible for hashing
-    const newUserDbDocument = new User({
-        email: req.body.email,
-        password: req.body.password
-    });
-    newUserDbDocument.save().then(function(user){
-        res.send(user);
-    }).catch(next);
+    try {
+        // Might delete this since the one using the api should be the one responsible for hashing
+        const newUserDbDocument = new User({
+            email: req.body.email,
+            password: req.body.password
+        });
+        // newUserDbDocument.save().then(function(user){
+        //     const token = await user.generateAuthToken();
+        //     res.send({user, token});
+        // }).catch(next);
+        
+        const user = await newUserDbDocument.save();
+        const token = await user.generateAuthToken();
+        res.status(201).send({ user, token });
+    } catch(error) {
+        res.status(400).send(error);
+    }
 };
 
 // Handle view user info
