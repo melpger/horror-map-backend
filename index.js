@@ -1,6 +1,6 @@
-const express           = require('express');           // Import express
-const userRouter        = require('./Routes/user');
-const horrorRouter      = require('./Routes/horror');
+const express = require('express'); // Import express
+const userRouter = require('./Routes/user');
+const horrorRouter = require('./Routes/horror');
 require('./db/db');
 require('dotenv').config();
 
@@ -14,13 +14,14 @@ app.use('/api', userRouter);
 app.use('/api', horrorRouter);
 
 // error handling middleware
-app.use(function(err,req,res,next){
-    //console.log(err);
-    res.status(422).send({error: err.message});
+app.use(function (err, req, res, next) {
+    res.status(422).send({
+        error: err.message
+    });
 });
 
 // listen for requests
-app.listen(process.env.port || 4000, function(){
+app.listen(process.env.port || 4000, function () {
     console.log('Ready to Go!');
 });
 

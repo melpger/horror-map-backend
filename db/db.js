@@ -1,4 +1,4 @@
-const mongoose          = require('mongoose');          // Import Mongoose
+const mongoose = require('mongoose'); // Import Mongoose
 
 mongoose.connect(process.env.MONGODB_URL, {
     // useNewUrlParser: true,

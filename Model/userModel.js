@@ -3,11 +3,13 @@ const validator = require('validator')
 const bcrypt = require("bcryptjs")
 const Schema = mongoose.Schema;
 const jwt = require('jsonwebtoken')
+var uniqueValidator = require('mongoose-unique-validator');
 
 // create user schema & model
 const UserSchema = new Schema({
   email: {
     type: String,
+    unique: true,
     required: [true, 'Email is required'],
     validate: value => {
       if (!validator.isEmail(value)) {
@@ -54,15 +56,30 @@ UserSchema.pre("save", function (next) {
   }
 });
 
-UserSchema.methods.generateAuthToken = async function() {
+UserSchema.methods.generateAuthToken = async function () {
   // Generate an auth token for the user
   const user = this;
-  const token = jwt.sign({_id: user._id}, process.env.JWT_KEY);
-  user.tokens = user.tokens.concat({token});
+  const token = jwt.sign({
+    _id: user._id
+  }, process.env.JWT_KEY, {
+    expiresIn: '5m'
+  });
+  user.tokens = user.tokens.concat({
+    token
+  });
   await user.save();
   return token;
 }
 
+UserSchema.statics.isEmailUnique = async (email) => {
+  const user = await User.findOne({
+    email
+  });
+  if (user) {
+    return false;
+  }
+  return true;
+}
 
 UserSchema.statics.findByCredentials = async (email, password) => {
   // Search for a user by email and password.
@@ -74,7 +91,7 @@ UserSchema.statics.findByCredentials = async (email, password) => {
       error: 'Invalid login credentials'
     });
   }
-  
+
   const isPasswordMatch = await bcrypt.compare(password, user.password)
 
   if (!isPasswordMatch) {
@@ -82,7 +99,7 @@ UserSchema.statics.findByCredentials = async (email, password) => {
       error: 'Invalid login credentials'
     });
   }
-  
+
   return user;
 }
 

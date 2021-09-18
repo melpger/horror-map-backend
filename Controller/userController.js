@@ -5,7 +5,7 @@ User = require('../Model/userModel');
 
 // Handle user index actions
 exports.index = function (req, res, next) {
-    User.find({}).then(function(users){
+    User.find({}).then(function (users) {
         res.send(users);
     }).catch(next);
 };
@@ -39,6 +39,23 @@ exports.logoutall = async function (req, res, next) {
     }
 }
 
+// Logout all User Tokens
+exports.logoutallUsers = async function (req, res, next) {
+    try {
+        User.updateMany({}, {
+            $set: {
+                tokens: []
+            }
+        }).then(function (user) {
+            // console.log(user);
+            // req.user.save;
+            res.send(user);
+        });
+
+    } catch (error) {
+        res.status(500).send(error);
+    }
+}
 
 // Handle create user info
 exports.new = async function (req, res, next) {
@@ -51,30 +68,42 @@ exports.new = async function (req, res, next) {
             email: req.body.email,
             password: req.body.password
         });
-        // newUserDbDocument.save().then(function(user){
-        //     const token = await user.generateAuthToken();
-        //     res.send({user, token});
-        // }).catch(next);
-        
-        const user = await newUserDbDocument.save();
-        const token = await user.generateAuthToken();
-        res.status(201).send({ user, token });
-    } catch(error) {
+
+        const isEmailUnique = await User.isEmailUnique(newUserDbDocument.email);
+        if (isEmailUnique) {
+            const user = await newUserDbDocument.save();
+            const token = await user.generateAuthToken();
+            res.status(201).send({
+                user,
+                token
+            });
+        } else {
+            res.status(400).send({
+                "error": "Email Address is already in use."
+            });
+        }
+    } catch (error) {
         res.status(400).send(error);
     }
 };
 
 // Handle view user info
 exports.view = function (req, res, next) {
-    User.findOne({_id: req.params.id}).then(function(user){
+    User.findOne({
+        _id: req.body.id
+    }).then(function (user) {
         res.send(user);
     });
 };
 
 // Handle update user info
 exports.update = function (req, res, next) {
-    User.findOneAndUpdate({_id: req.params.id},req.body).then(function(user){
-        User.findOne({_id: req.params.id}).then(function(user){
+    User.findOneAndUpdate({
+        _id: req.params.id
+    }, req.body).then(function (user) {
+        User.findOne({
+            _id: req.params.id
+        }).then(function (user) {
             res.send(user);
         });
     });
@@ -82,8 +111,14 @@ exports.update = function (req, res, next) {
 
 // Handle delete user info
 exports.delete = function (req, res, next) {
-    User.findOneAndDelete({_id: req.params.id}).then(function(user){
-        res.send(user);
+    User.findOneAndDelete({
+        _id: req.body.id
+    }).then(function (user) {
+        res.send({
+            "_id": user._id,
+            "email": user.email,
+            "message": "deleted"
+        });
     });
 };
 
@@ -91,13 +126,21 @@ exports.delete = function (req, res, next) {
 exports.login = async function (req, res, next) {
     //Login a registered user
     try {
-        const { email, password } = req.body;
-        const user =  await User.findByCredentials(email, password);
+        const {
+            email,
+            password
+        } = req.body;
+        const user = await User.findByCredentials(email, password);
         if (!user) {
-            return res.status(401).send({error: 'Login failed! Check authentication credentials'});
+            return res.status(401).send({
+                error: 'Login failed! Check authentication credentials'
+            });
         }
-        const token =  await user.generateAuthToken();
-        res.send({ user, token });
+        const token = await user.generateAuthToken();
+        res.send({
+            user,
+            token
+        });
     } catch (error) {
         res.status(400).send(error);
     }
