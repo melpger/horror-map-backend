@@ -46,10 +46,14 @@ router.route('/user/get')
 //10900
 router.route('/user/delete')
     .post(auth, userController.delete);
+router.route('/user/me/delete')
+    .post(auth, userController.meDelete);
 
 //11000
 router.route('/user/update')
     .post(auth, userController.update);
+router.route('/user/me/update')
+    .post(auth, userController.meUpdate);
 
 // Export API routes
 module.exports = router;

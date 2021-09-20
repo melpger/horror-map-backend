@@ -119,11 +119,7 @@ exports.logoutallUsers = async function (req, res, next) {
 
 // Handle create user info
 exports.new = async function (req, res, next) {
-    // User.create(req.body).then(function(user){
-    //     res.send(user);
-    // }).catch(next);
     try {
-        // Might delete this since the one using the api should be the one responsible for hashing
         const newUserDbDocument = new User({
             email: req.body.email,
             password: req.body.password,
@@ -183,23 +179,47 @@ exports.view = async function (req, res, next) {
 };
 
 // Handle update user info
+exports.meUpdate = async function (req, res, next) {
+    req.body.id = req.user._id.toString();
+    await updateUser(req, res, next);
+}
+
 exports.update = async function (req, res, next) {
+    await updateUser(req, res, next);
+};
+
+async function updateUser(req, res, next) {
     try {
+        if (null == req.body.id || '' == req.body.id || !req.body.id) {
+            const error = new Error();
+            error.code = 11002;
+            error.suberror_msg = 'User ID missing.';
+            throw error;
+        }
+        
+        const isEmailUnique = await User.isEmailUnique(req.body.email);
+        if (!isEmailUnique) {
+            const error = new Error();
+            error.code = 11003;
+            error.suberror_msg = 'Email Address is already in use.';
+            throw error;
+        }
+
         await User.findOneAndUpdate({
             _id: req.body.id
         }, req.body).then(function (user) {
-            if (null==user || ''==user || !user) {
+            if (null == user || '' == user || !user) {
                 const error = new Error();
-                error.code = 11002;
+                error.code = 11004;
                 error.suberror_msg = 'User ID not Exist.';
                 throw error;
             }
             User.findOne({
                 _id: req.body.id
             }).then(function (user) {
-                if (null==user || ''==user || !user) {
+                if (null == user || '' == user || !user) {
                     const error = new Error();
-                    error.code = 11003;
+                    error.code = 11005;
                     error.suberror_msg = 'User ID not Exist.';
                     throw error;
                 }
@@ -209,26 +229,36 @@ exports.update = async function (req, res, next) {
                 });
             });
         });
-    } catch(error) {
+    } catch (error) {
         res.status(400).send({
             status: 0,
-            code: error.code??11001,
+            code: error.code ?? 11001,
             error_msg: 'User Update Failed.',
-            suberror_msg: error.suberror_msg??globalConst.EXCEPTION_ERROR
+            suberror_msg: error.suberror_msg ?? globalConst.EXCEPTION_ERROR,
+            // details: error
         });
     }
-};
+}
+
+exports.meDelete = async function (req, res, next) {
+    req.body = req.user
+    await deleteUser(req, res, next);
+}
 
 // Handle delete user info
 exports.delete = async function (req, res, next) {
+    await deleteUser(req, res, next);
+};
+
+async function deleteUser(req, res, next) {
     try {
         await User.findOneAndDelete({
             _id: req.body.id
         }).then(function (user) {
-            if (null==user || ''==user || !user) {
+            if (null == user || '' == user || !user) {
                 const error = new Error();
                 error.code = 10902;
-                error.suberror_msg = 'User ID does not exist.'
+                error.suberror_msg = 'User ID does not exist.';
                 throw error;
             }
             res.status(200).send({
@@ -240,12 +270,12 @@ exports.delete = async function (req, res, next) {
     } catch (error) {
         res.status(400).send({
             status: 0,
-            code: error.code??10901,
+            code: error.code ?? 10901,
             error_msg: 'User Deletion Failed.',
-            suberror_msg: error.suberror_msg??globalConst.EXCEPTION_ERROR
+            suberror_msg: error.suberror_msg ?? globalConst.EXCEPTION_ERROR
         });
     }
-};
+}
 
 //Handle user login
 exports.login = async function (req, res, next) {

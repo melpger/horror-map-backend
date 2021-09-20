@@ -26,10 +26,10 @@ const UserSchema = new Schema({
     required: [true, 'Password is required'],
     minlength: 7
   },
-  // isAdmin: {
-  //   type: Boolean,
-  //   required: true
-  // },
+  isAdmin: {
+    type: Boolean,
+    required: true
+  },
   tokens: [{
     token: {
       type: String,

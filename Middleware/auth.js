@@ -19,6 +19,14 @@ const auth = async (req, res, next) => {
             '/user/create'
         ];
 
+        const admin_level_routes = [
+            '/user/update',
+            '/user/get',
+            '/user/getAll',
+            '/user/logoutallUsers',
+            '/user/delete',
+        ];
+
         if (!token_auth_excemption_list.includes(req.path)) {
         // if (!(req.path == '/user/login')) {
             let token = req.header('Authorization');
@@ -54,6 +62,13 @@ const auth = async (req, res, next) => {
                 error.code = 10005;
                 error.suberror_msg = 'Invalid Token. Token did not match any user.';
                 throw error;                    
+            }
+
+            if (admin_level_routes.includes(req.path) && !userData.isAdmin) {
+                const error = new Error();
+                error.code = 10006;
+                error.suberror_msg = 'Sorry! Only Admin level accounts can access this resource.';
+                throw error;   
             }
 
             req.user = userData;
