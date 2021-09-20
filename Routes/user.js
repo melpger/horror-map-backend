@@ -4,56 +4,51 @@
 const express = require('express');
 const router = express.Router();
 
-//10000
-const auth = require('../Middleware/auth');
-
 const userController = require('../Controller/userController');
 
 //10100
 router.route('/user/getAll')
-    // .get( userController.index)
-    .get(auth, userController.index)
+    .get(userController.index)
 
 //10200
 router.route('/user/create')
-    .post(auth, userController.new);
+    .post(userController.new);
 
 //10300
 router.route('/user/me')
-    // .get( userController.me)
-    .get(auth, userController.me)
+    .get(userController.me)
 
 //10400
 router.route('/user/me/logout')
-    .post(auth, userController.logout)
+    .post(userController.logout)
 
 //10500
 router.route('/user/me/logoutall')
-    .post(auth, userController.logoutall)
+    .post(userController.logoutall)
 
 //10600
 router.route('/user/logoutallUsers')
-    .post(auth, userController.logoutallUsers)
+    .post(userController.logoutallUsers)
 
 //10700
 router.route('/user/login')
-    .post(auth, userController.login);
+    .post(userController.login);
 
 //10800
 router.route('/user/get')
-    .post(auth, userController.view)
+    .post(userController.view)
 
 //10900
 router.route('/user/delete')
-    .post(auth, userController.delete);
+    .post(userController.delete);
 router.route('/user/me/delete')
-    .post(auth, userController.meDelete);
+    .post(userController.meDelete);
 
 //11000
 router.route('/user/update')
-    .post(auth, userController.update);
+    .post(userController.update);
 router.route('/user/me/update')
-    .post(auth, userController.meUpdate);
+    .post(userController.meUpdate);
 
 // Export API routes
 module.exports = router;

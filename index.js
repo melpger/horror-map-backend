@@ -1,4 +1,7 @@
 const express = require('express'); // Import express
+const router = express.Router();
+const auth = require('./Middleware/auth');
+
 const userRouter = require('./Routes/user');
 const horrorRouter = require('./Routes/horror');
 require('./db/db');
@@ -10,6 +13,7 @@ const app = express();
 app.use(express.static('public'));
 app.use(express.json());
 
+app.use('/api', auth);
 app.use('/api', userRouter);
 app.use('/api', horrorRouter);
 

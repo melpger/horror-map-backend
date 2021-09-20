@@ -304,7 +304,7 @@ exports.login = async function (req, res, next) {
             token: token
         });
     } catch (error) {
-        console.log(error)
+        // console.log(error)
         res.status(error.httpcode??400).send({
             status: 0,
             code: error.code??10701,
