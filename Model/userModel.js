@@ -24,11 +24,11 @@ const UserSchema = new Schema({
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: 7
   },
   isAdmin: {
     type: Boolean,
-    required: true
+    required: true,
+    default: false
   },
   tokens: [{
     token: {
@@ -149,7 +149,7 @@ UserSchema.statics.findByCredentials = async (email, password) => {
     error.suberror_msg = 'Email does not exist.';
     throw error;
   }
-  let isPasswordMatch
+  let isPasswordMatch = false;
   try {
     // console.log("pw", password)
     // isPasswordMatch =  decrypt(password, "Secret Message");
@@ -162,7 +162,7 @@ UserSchema.statics.findByCredentials = async (email, password) => {
     isPasswordMatch = (reqpw == dbpw);
 
   } catch (error) {
-    console.log(error);
+    // console.log(error);
   }
 
   if (!isPasswordMatch) {

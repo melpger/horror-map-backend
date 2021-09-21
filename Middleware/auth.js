@@ -1,6 +1,7 @@
 // auth.js`
 
 const jwt = require('jsonwebtoken');
+const cryptojs = require('crypto-js');
 const User = require('../Model/userModel')
 const globalConst = require('../Constant/constants');
 
@@ -11,6 +12,25 @@ const auth = async (req, res, next) => {
             const error = new Error();
             error.code = 10002;
             error.suberror_msg = 'Missing Horror-Map-Authorization Header';
+            throw error;
+        }
+        
+        let hash = req.header('Hash')?req.header('Hash').slice(1,-1):'';
+        if (hash == '' || hash == null) {
+            const error = new Error();
+            error.code = 10003;
+            error.suberror_msg = 'Missing Hash Header';
+            throw error;
+        }
+
+        var stringbody = JSON.stringify((req.body));
+        var bodyhash = cryptojs.MD5(stringbody).toString();
+        console.log(req.path, stringbody, bodyhash, hash);
+
+        if ( bodyhash != hash) {
+            const error = new Error();
+            error.code = 10004;
+            error.suberror_msg = 'Request Body is tampered';
             throw error;
         }
 
@@ -33,7 +53,7 @@ const auth = async (req, res, next) => {
 
             if (token == '' || token == null) {
                 const error = new Error();
-                error.code = 10003;
+                error.code = 10005;
                 error.suberror_msg = 'Missing Token. Please Login first.';
                 throw error;
             }
@@ -45,7 +65,7 @@ const auth = async (req, res, next) => {
                 decoded = await jwt.verify(token, process.env.JWT_KEY);
             } catch (e) {
                 const error = new Error();
-                error.code = 10004;
+                error.code = 10006;
                 error.suberror_msg = 'Invalid Token. Please Login again.';
                 throw error; 
             }
@@ -59,14 +79,14 @@ const auth = async (req, res, next) => {
             
             if (null==userData || ''==userData || !userData) {
                 const error = new Error();
-                error.code = 10005;
+                error.code = 10007;
                 error.suberror_msg = 'Invalid Token. Token did not match any user.';
                 throw error;                    
             }
 
             if (admin_level_routes.includes(req.path) && !userData.isAdmin) {
                 const error = new Error();
-                error.code = 10006;
+                error.code = 10008;
                 error.suberror_msg = 'Sorry! Only Admin level accounts can access this resource.';
                 throw error;   
             }
@@ -76,6 +96,7 @@ const auth = async (req, res, next) => {
         }
         next();
     } catch (error) {
+        // console.log(error)
         res.status(401).send({
             status: 0,
             code: error.code??10001,

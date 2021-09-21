@@ -147,6 +147,7 @@ exports.new = async function (req, res, next) {
             code: error.code??10201,
             error_msg: 'User Creation Failed.',
             suberror_msg: error.suberror_msg??globalConst.EXCEPTION_ERROR,
+            details: error
         });
     }
 };
