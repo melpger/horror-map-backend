@@ -23,13 +23,21 @@ const auth = async (req, res, next) => {
             throw error;
         }
 
+        let userAgent = req.header('User-Agent');
+        if (userAgent == '' || userAgent == null) {
+            const error = new Error();
+            error.code = 10004;
+            error.suberror_msg = 'Missing User-Agent Header';
+            throw error;
+        }
+
         var stringbody = JSON.stringify((req.body));
         var bodyhash = cryptojs.MD5(stringbody).toString();
         console.log(req.path, stringbody, bodyhash, hash);
 
         if ( bodyhash != hash) {
             const error = new Error();
-            error.code = 10004;
+            error.code = 10005;
             error.suberror_msg = 'Request Body is tampered';
             throw error;
         }
@@ -53,7 +61,7 @@ const auth = async (req, res, next) => {
 
             if (token == '' || token == null) {
                 const error = new Error();
-                error.code = 10005;
+                error.code = 10006;
                 error.suberror_msg = 'Missing Token. Please Login first.';
                 throw error;
             }
@@ -65,7 +73,7 @@ const auth = async (req, res, next) => {
                 decoded = await jwt.verify(token, process.env.JWT_KEY);
             } catch (e) {
                 const error = new Error();
-                error.code = 10006;
+                error.code = 10007;
                 error.suberror_msg = 'Invalid Token. Please Login again.';
                 throw error; 
             }
@@ -79,14 +87,14 @@ const auth = async (req, res, next) => {
             
             if (null==userData || ''==userData || !userData) {
                 const error = new Error();
-                error.code = 10007;
+                error.code = 10008;
                 error.suberror_msg = 'Invalid Token. Token did not match any user.';
                 throw error;                    
             }
 
             if (admin_level_routes.includes(req.path) && !userData.isAdmin) {
                 const error = new Error();
-                error.code = 10008;
+                error.code = 10009;
                 error.suberror_msg = 'Sorry! Only Admin level accounts can access this resource.';
                 throw error;   
             }
