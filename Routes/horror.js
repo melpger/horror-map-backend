@@ -14,6 +14,5 @@ router.route('/horror/:horror_id')
     .get(horrorController.view)
     .delete(horrorController.delete);
 
-
 // Export API routes
 module.exports = router;

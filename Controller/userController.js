@@ -3,28 +3,30 @@
 // Import user model
 User = require('../Model/userModel');
 const globalConst = require('../Constant/constants');
+const util = require('../Util/util');
 
-// Handle user index actions
-exports.index = async function (req, res, next) {
+// Get list of all users
+exports.userlist = async function (req, res, next) {
     try {
         await User.find({}).then(function (users) {
-            if (null==users || ''==users || !users) {
+            if (util.isEmpty(users)|| !users) {
                 const error = new Error();
-                error.code = 10102;
-                error.suberror_msg = 'User List is Empty.'
+                error.code = globalConst.ERROR.ERROR_CODE.EMPTY_USER_LIST;
+                error.suberror_msg = globalConst.ERROR.SUB_ERROR.EMPTY_USER_LIST;
                 throw error;
             }
             res.status(200).send({
-                status: 1,
+                status: globalConst.STATUS.OK,
                 user: users
             });
+            next();
         })
     } catch (error) {
         res.status(400).send({
-            status: 0,
-            code: error.code??10101,
-            error: 'User List Retrieval Failed.',
-            suberror_msg: error.suberror_msg??globalConst.EXCEPTION_ERROR,
+            status: globalConst.STATUS.FAIL,
+            code: error.code??globalConst.ERROR.ERROR_CODE.USER_LIST_RETRIEVAL_EXCEPTION_ERROR,
+            error: globalConst.ERROR.MAIN_ERROR.USER_LIST_RETRIEVAL_EXCEPTION_ERROR,
+            suberror_msg: error.suberror_msg??globalConst.ERROR.SUB_ERROR.EXCEPTION_ERROR,
         });
     }
 };
@@ -33,15 +35,16 @@ exports.index = async function (req, res, next) {
 exports.me = function (req, res, next) {
     try {
         res.status(200).send({
-            status: 1,
+            status: globalConst.STATUS.OK,
             user: req.user
         });
+        next();
     } catch(error) {
         res.status(400).send({
-            status: 0,
-            code: error.code??10301,
-            error: 'User Profile Retrieval Failed.',
-            suberror_msg: error.suberror_msg??globalConst.EXCEPTION_ERROR,
+            status: globalConst.STATUS.FAIL,
+            code: error.code??globalConst.ERROR.ERROR_CODE.USER_INFO_RETRIEVAL_EXCEPTION_ERROR,
+            error: globalConst.ERROR.MAIN_ERROR.USER_INFO_RETRIEVAL_EXCEPTION_ERROR,
+            suberror_msg: error.suberror_msg??globalConst.ERROR.SUB_ERROR.EXCEPTION_ERROR,
         });
     }
 }
@@ -54,16 +57,17 @@ exports.logout = async function (req, res, next) {
         })
         await req.user.save()
         res.status(200).send({
-            status: 1,
+            status: globalConst.STATUS.OK,
             logout: 1,
             message: 'Succesfully logged out.'
         });
+        next();
     } catch (error) {
         res.status(500).send({
-            status: 0,
-            code: 10401,
-            error: 'Logout Failed.',
-            suberror_msg: error.suberror_msg??globalConst.EXCEPTION_ERROR,
+            status: globalConst.STATUS.FAIL,
+            code: error.code??globalConst.ERROR.ERROR_CODE.USER_LOGOUT_EXCEPTION_ERROR,
+            error: globalConst.ERROR.MAIN_ERROR.USER_LOGOUT_EXCEPTION_ERROR,
+            suberror_msg: error.suberror_msg??globalConst.ERROR.SUB_ERROR.EXCEPTION_ERROR,
             details: error
         });
     }
@@ -75,15 +79,16 @@ exports.logoutall = async function (req, res, next) {
         req.user.tokens.splice(0, req.user.tokens.length)
         await req.user.save()
         res.status(200).send({
-            status: 1,
+            status: globalConst.STATUS.OK,
             logout: 1,
             message: 'Succesfully logged out on all devices.'
         });
+        next();
     } catch (error) {
         res.status(500).send({
-            status: 0,
-            code: 10501,
-            error: 'Logout Failed.',
+            status: globalConst.STATUS.FAIL,
+            code: error.code??globalConst.ERROR.ERROR_CODE.USER_LOGOUT_ALL_EXCEPTION_ERROR,
+            error: globalConst.ERROR.MAIN_ERROR.USER_LOGOUT_ALL_EXCEPTION_ERROR,
             suberror_msg: 'Logging out on all devices failed. Please try again.',
             details: error
         });
@@ -99,16 +104,17 @@ exports.logoutallUsers = async function (req, res, next) {
             }
         }).then(function (user) {
             res.status(200).send({
-                status: 1,
+                status: globalConst.STATUS.OK,
                 logout: 1,
                 message: 'Successfully logged out all users.',
                 loggedout_count: user.modifiedCount,
                 match_count: user.matchedCount
             });
         });
+        next();
     } catch (error) {
         res.status(500).send({
-            status: 0,
+            status: globalConst.STATUS.FAIL,
             code: 10601,
             error: 'Logout Failed.',
             suberror_msg: 'Failed to logout all users. Please try again.',
@@ -129,12 +135,14 @@ exports.new = async function (req, res, next) {
         const isEmailUnique = await User.isEmailUnique(newUserDbDocument.email);
         if (isEmailUnique) {
             const user = await newUserDbDocument.save();
-            const token = await user.generateAuthToken();
+            let userAgent = req.header(globalConst.HEADER.USER_AGENT);
+            const token = await user.generateAuthToken(userAgent);
             res.status(201).send({
-                status: 1,
+                status: globalConst.STATUS.OK,
                 user: user,
                 token: token
             });
+            next();
         } else {
             const error = new Error();
             error.code = 10202;
@@ -143,10 +151,10 @@ exports.new = async function (req, res, next) {
         }
     } catch (error) {
         res.status(400).send({
-            status: 0,
+            status: globalConst.STATUS.FAIL,
             code: error.code??10201,
             error_msg: 'User Creation Failed.',
-            suberror_msg: error.suberror_msg??globalConst.EXCEPTION_ERROR,
+            suberror_msg: error.suberror_msg??globalConst.ERROR.SUB_ERROR.EXCEPTION_ERROR,
             details: error
         });
     }
@@ -165,16 +173,17 @@ exports.view = async function (req, res, next) {
                 throw error;
             }
             res.status(200).send({
-                status: 1,
+                status: globalConst.STATUS.OK,
                 user: user,
             });
+            next();
         });
     } catch (error) {
         res.status(400).send({
-            status: 0,
+            status: globalConst.STATUS.FAIL,
             code: error.code??10801,
             error_msg: 'User Info Retrieval Failed.',
-            suberror_msg: error.suberror_msg??globalConst.EXCEPTION_ERROR
+            suberror_msg: error.suberror_msg??globalConst.ERROR.SUB_ERROR.EXCEPTION_ERROR
         });
     }
 };
@@ -225,17 +234,18 @@ async function updateUser(req, res, next) {
                     throw error;
                 }
                 res.status(200).send({
-                    status: 1,
+                    status: globalConst.STATUS.OK,
                     user: user,
                 });
+                next();
             });
         });
     } catch (error) {
         res.status(400).send({
-            status: 0,
+            status: globalConst.STATUS.FAIL,
             code: error.code ?? 11001,
             error_msg: 'User Update Failed.',
-            suberror_msg: error.suberror_msg ?? globalConst.EXCEPTION_ERROR,
+            suberror_msg: error.suberror_msg ?? globalConst.ERROR.SUB_ERROR.EXCEPTION_ERROR,
             // details: error
         });
     }
@@ -263,17 +273,18 @@ async function deleteUser(req, res, next) {
                 throw error;
             }
             res.status(200).send({
-                status: 1,
+                status: globalConst.STATUS.OK,
                 deleted: 1,
                 email: user.email
             });
+            next();
         });
     } catch (error) {
         res.status(400).send({
-            status: 0,
+            status: globalConst.STATUS.FAIL,
             code: error.code ?? 10901,
             error_msg: 'User Deletion Failed.',
-            suberror_msg: error.suberror_msg ?? globalConst.EXCEPTION_ERROR
+            suberror_msg: error.suberror_msg ?? globalConst.ERROR.SUB_ERROR.EXCEPTION_ERROR
         });
     }
 }
@@ -297,20 +308,21 @@ exports.login = async function (req, res, next) {
             throw error;
         }
 
-        const token = await user.generateAuthToken();
-
+        let userAgent = req.header(globalConst.HEADER.USER_AGENT);
+        const token = await user.generateAuthToken(userAgent);
+        
         res.status(200).send({
-            status: 1,
+            status: globalConst.STATUS.OK,
             user: user,
             token: token
         });
+        next();
     } catch (error) {
-        // console.log(error)
         res.status(error.httpcode??400).send({
-            status: 0,
+            status: globalConst.STATUS.FAIL,
             code: error.code??10701,
             error_msg: 'Login Failed.',
-            suberror_msg: error.suberror_msg ?? globalConst.EXCEPTION_ERROR,
+            suberror_msg: error.suberror_msg ?? globalConst.ERROR.SUB_ERROR.EXCEPTION_ERROR,
         });
     }
 };

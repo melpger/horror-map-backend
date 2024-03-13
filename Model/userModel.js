@@ -30,8 +30,12 @@ const UserSchema = new Schema({
     required: true,
     default: false
   },
-  tokens: [{
-    token: {
+  refreshTokens: [{
+    refreshToken: {
+      type: String,
+      required: true
+    },
+    userAgent: {
       type: String,
       required: true
     }
@@ -62,16 +66,22 @@ UserSchema.pre("save", function (next) {
   // }
 });
 
-UserSchema.methods.generateAuthToken = async function () {
+UserSchema.methods.generateAuthToken = async function (userAgent) {
   // Generate an auth token for the user
   const user = this;
   const token = jwt.sign({
     _id: user._id
-  }, process.env.JWT_KEY, {
+  }, process.env.ACCESS_JWT_KEY, {
     expiresIn: '5m'
   });
-  user.tokens = user.tokens.concat({
-    token
+  const refreshToken = jwt.sign({
+    _id: user._id
+  }, process.env.REFRESH_JWT_KEY, {
+    expiresIn: '1d'
+  });
+  user.refreshTokens = user.tokens.concat({
+    refreshToken,
+    userAgent
   });
   await user.save();
   return token;

@@ -1,117 +1,114 @@
 // auth.js`
-
+// All Routes will first be processed here.
 const jwt = require('jsonwebtoken');
 const cryptojs = require('crypto-js');
 const User = require('../Model/userModel')
 const globalConst = require('../Constant/constants');
+const util = require('../Util/util');
 
 const auth = async (req, res, next) => {
     try {
-        const horrorMapAuth = req.header('Horror-Map-Authorization');
-        if (horrorMapAuth == '' || horrorMapAuth == null || horrorMapAuth != process.env.HORROR_MAP_AUTHORIZATION) {
+        //1. Check for Horror-Map-Authorization Header if present and valid.
+        const horrorMapAuth = req.header(globalConst.HEADER.HORROR_MAP_AUTHORIZATION);
+        if (util.isEmpty(horrorMapAuth) || horrorMapAuth != process.env.HORROR_MAP_AUTHORIZATION) {
             const error = new Error();
-            error.code = 10002;
-            error.suberror_msg = 'Missing Horror-Map-Authorization Header';
+            error.code = globalConst.ERROR.ERROR_CODE.MISSING_AUTH_HEADER;
+            error.suberror_msg = globalConst.ERROR.SUB_ERROR.MISSING_AUTH_HEADER;
             throw error;
         }
         
-        let hash = req.header('Hash')?req.header('Hash').slice(1,-1):'';
-        if (hash == '' || hash == null) {
+        //2. Check for Hash Header if present and valid.
+        let hash = req.header(globalConst.HEADER.HASH)?req.header(globalConst.HEADER.HASH).slice(1,-1):'';
+        if (util.isEmpty(hash)) {
             const error = new Error();
-            error.code = 10003;
-            error.suberror_msg = 'Missing Hash Header';
+            error.code = globalConst.ERROR.ERROR_CODE.MISSING_HASH_HEADER;;
+            error.suberror_msg = globalConst.ERROR.SUB_ERROR.MISSING_HASH_HEADER;
             throw error;
         }
 
-        let userAgent = req.header('User-Agent');
-        if (userAgent == '' || userAgent == null) {
+        //3. Check for User-Agent Header if present and valid.
+        let userAgent = req.header(globalConst.HEADER.USER_AGENT);
+        if (util.isEmpty(userAgent)) {
             const error = new Error();
-            error.code = 10004;
-            error.suberror_msg = 'Missing User-Agent Header';
+            error.code = globalConst.ERROR.ERROR_CODE.MISSING_USER_AGENT_HEADER;
+            error.suberror_msg = globalConst.ERROR.SUB_ERROR.MISSING_USER_AGENT_HEADER;
             throw error;
         }
 
+        //4. Check that the Hash is correct with respect to the request body
         var stringbody = JSON.stringify((req.body));
         var bodyhash = cryptojs.MD5(stringbody).toString();
-        console.log(req.path, stringbody, bodyhash, hash);
-
         if ( bodyhash != hash) {
             const error = new Error();
-            error.code = 10005;
-            error.suberror_msg = 'Request Body is tampered';
+            error.code = globalConst.ERROR.ERROR_CODE.REQUEST_BODY_TEMPERED;
+            error.suberror_msg = globalConst.ERROR.SUB_ERROR.REQUEST_BODY_TEMPERED;
             throw error;
         }
 
-        const token_auth_excemption_list = [
-            '/user/login',
-            '/user/create'
-        ];
+        //5. Validate Routes needing Tokens before access (non-login, non-usercreation)
+        if (!globalConst.TOKEN_AUTH_EXCEMPTION_LIST.includes(req.path)) {
 
-        const admin_level_routes = [
-            '/user/update',
-            '/user/get',
-            '/user/getAll',
-            '/user/logoutallUsers',
-            '/user/delete',
-        ];
-
-        if (!token_auth_excemption_list.includes(req.path)) {
-        // if (!(req.path == '/user/login')) {
-            let token = req.header('Authorization');
-
-            if (token == '' || token == null) {
+            //5-1. Check for Authorization(Bearer) Header if present and valid.
+            let token = req.header(globalConst.HEADER.AUTHORIZATION);
+            if (util.isEmpty(token)) {
                 const error = new Error();
-                error.code = 10006;
-                error.suberror_msg = 'Missing Token. Please Login first.';
+                error.code = globalConst.ERROR.ERROR_CODE.MISSING_TOKEN;
+                error.suberror_msg = globalConst.ERROR.SUB_ERROR.MISSING_TOKEN;
                 throw error;
             }
 
+            //5-2. Verify Bearer Token if Valid
+            //Sample : 
+            //To Generate : https://www.javainuse.com/jwtgenerator
+            //To Validate : https://jwt.io/
+            //Use JWT_KEY on both sites
             token = token.replace('Bearer ', '');
-
             let decoded;
             try {
-                decoded = await jwt.verify(token, process.env.JWT_KEY);
+                decoded = await jwt.verify(token, process.env.ACCESS_JWT_KEY);
             } catch (e) {
                 const error = new Error();
-                error.code = 10007;
-                error.suberror_msg = 'Invalid Token. Please Login again.';
+                error.code = globalConst.ERROR.ERROR_CODE.INVALID_TOKEN_RELOGIN;
+                error.suberror_msg = globalConst.ERROR.SUB_ERROR.INVALID_TOKEN_RELOGIN;
                 throw error; 
             }
  
+            //5-2-1. Get the ID from the Decoded Bearer Token
             const query = [
                 { id: decoded._id },
                 { 'tokens.token': token }
             ];
 
+            //5-2-2. Check if the token and id is mapped to a user
             const userData = await User.findOne({$and: query});
             
-            if (null==userData || ''==userData || !userData) {
+            if (util.isEmpty(userData) || !userData) {
                 const error = new Error();
-                error.code = 10008;
-                error.suberror_msg = 'Invalid Token. Token did not match any user.';
+                error.code = globalConst.ERROR.ERROR_CODE.INVALID_TOKEN_UNMAPPED_USER;
+                error.suberror_msg = globalConst.ERROR.SUB_ERROR.INVALID_TOKEN_UNMAPPED_USER;
                 throw error;                    
             }
 
-            if (admin_level_routes.includes(req.path) && !userData.isAdmin) {
+            //5-3. Check if the route being accessed is for Admin only or not
+            if (globalConst.ADMIN_LEVEL_ROUTES.includes(req.path) && !userData.isAdmin) {
                 const error = new Error();
-                error.code = 10009;
-                error.suberror_msg = 'Sorry! Only Admin level accounts can access this resource.';
+                error.code = globalConst.ERROR.ERROR_CODE.ADMIN_ONLY_RESOURCE;
+                error.suberror_msg = globalConst.ERROR.SUB_ERROR.ADMIN_ONLY_RESOURCE;
                 throw error;   
             }
 
+            //5-4. Set user data and token to req for passing to succeeding processing of route
             req.user = userData;
             req.token = token;
         }
         next();
     } catch (error) {
-        // console.log(error)
         res.status(401).send({
-            status: 0,
-            code: error.code??10001,
-            error_msg: 'Not authorized to access this resource',
-            suberror_msg: error.suberror_msg??globalConst.EXCEPTION_ERROR
+            status: globalConst.STATUS.FAIL,
+            code: error.code??globalConst.ERROR.ERROR_CODE.AUTH_EXCEPTION_ERROR,
+            error_msg: globalConst.ERROR.MAIN_ERROR.NO_AUTHORIZATION,
+            suberror_msg: error.suberror_msg??globalConst.ERROR.SUB_ERROR.EXCEPTION_ERROR
         });
     }
-
 }
 module.exports = auth

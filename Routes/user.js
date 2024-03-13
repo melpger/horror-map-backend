@@ -2,52 +2,57 @@
 
 // Initialize express router
 const express = require('express');
+const userController = require('../Controller/userController');
+const globalConst = require('../Constant/constants');
+
 const router = express.Router();
 
-const userController = require('../Controller/userController');
+//10100 - Get list of all users - admin only
+router.route(globalConst.ROUTES.USER_GET_ALL)
+    .get(userController.userlist)
 
-//10100
-router.route('/user/getAll')
-    .get(userController.index)
-
-//10200
-router.route('/user/create')
+//10200 - Create user
+router.route(globalConst.ROUTES.USER_CREATE)
     .post(userController.new);
 
-//10300
-router.route('/user/me')
+//10300 - Get own user info
+router.route(globalConst.ROUTES.USER_ME)
     .get(userController.me)
 
-//10400
-router.route('/user/me/logout')
+//10400 - Logout own self
+router.route(globalConst.ROUTES.USER_ME_LOGOUT)
     .post(userController.logout)
 
-//10500
-router.route('/user/me/logoutall')
+//10500 - Logout own self on all devices
+router.route(globalConst.ROUTES.USER_ME_LOGOUT_ALL)
     .post(userController.logoutall)
 
-//10600
-router.route('/user/logoutallUsers')
+//10600 - Logout all users - admin only
+router.route(globalConst.ROUTES.USER_LOGOUT_ALL)
     .post(userController.logoutallUsers)
 
-//10700
-router.route('/user/login')
+//10700 - User login
+router.route(globalConst.ROUTES.USER_LOGIN)
     .post(userController.login);
 
-//10800
-router.route('/user/get')
+//10800 - Get User info - admin only
+router.route(globalConst.ROUTES.USER_GET)
     .post(userController.view)
 
 //10900
-router.route('/user/delete')
+//Delete user - admin only
+router.route(globalConst.ROUTES.USER_DELETE)
     .post(userController.delete);
-router.route('/user/me/delete')
+//Delete own self
+router.route(globalConst.ROUTES.USER_ME_DELETE)
     .post(userController.meDelete);
 
 //11000
-router.route('/user/update')
+//Update user info - admin only
+router.route(globalConst.ROUTES.USER_UPDATE)
     .post(userController.update);
-router.route('/user/me/update')
+//Update own info
+router.route(globalConst.ROUTES.USER_ME_UPDATE)
     .post(userController.meUpdate);
 
 // Export API routes
