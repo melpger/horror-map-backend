@@ -79,7 +79,7 @@ UserSchema.methods.generateAuthToken = async function (userAgent) {
   }, process.env.REFRESH_JWT_KEY, {
     expiresIn: '1d'
   });
-  user.refreshTokens = user.tokens.concat({
+  user.refreshTokens = user.refreshTokens.concat({
     refreshToken,
     userAgent
   });
