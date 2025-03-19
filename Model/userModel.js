@@ -172,7 +172,6 @@ UserSchema.statics.findByCredentials = async (email, password) => {
   }
   let isPasswordMatch = false;
   try {
-    // console.log("pw", password)
     // isPasswordMatch =  decrypt(password, "Secret Message");
     var bytes = cryptojs.AES.decrypt(password, process.env.PW_KEY)
     var reqpw = bytes.toString(cryptojs.enc.Utf8);

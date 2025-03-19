@@ -102,10 +102,14 @@ exports.logoutall = async function (req, res, next) {
     }
 }
 
-// Logout all User Tokens
+// Logout all User Tokens - meaning logout refreshtokens since no access token being saved in DB
 exports.logoutallUsers = async function (req, res, next) {
     try {
-        User.updateMany({}, {
+        const isIncludeMe = (null != req.body.includeMe && '' != req.body.includeMe && req.body.includeMe);
+
+        const filter = isIncludeMe ? {} : { _id : { $nin : [req.user._id]}};
+
+        await User.updateMany(filter , {
             $set: {
                 refreshTokens: []
             }
