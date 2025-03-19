@@ -75,11 +75,11 @@ const auth = async (req, res, next) => {
  
             //5-2-1. Get the ID from the Decoded Bearer Token
             const query = [
-                { id: decoded._id },
-                { 'tokens.token': token }
+                { _id: decoded._id },
+                { 'refreshTokens.creationDate': decoded.creationDate},
             ];
 
-            //5-2-2. Check if the token and id is mapped to a user
+            //5-2-2. Check if the decoded id of the token and its creation date corresponds to a valid user and a refreshtoken creation date in the DB
             const userData = await User.findOne({$and: query});
             
             if (util.isEmpty(userData) || !userData) {
@@ -99,7 +99,7 @@ const auth = async (req, res, next) => {
 
             //5-4. Set user data and token to req for passing to succeeding processing of route
             req.user = userData;
-            req.token = token;
+            req.tokenCreationDate = decoded.creationDate;
         }
         next();
     } catch (error) {

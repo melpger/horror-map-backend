@@ -3,7 +3,7 @@ const validator = require('validator')
 const cryptojs = require("crypto-js")
 const Schema = mongoose.Schema;
 const jwt = require('jsonwebtoken')
-var uniqueValidator = require('mongoose-unique-validator');
+//var uniqueValidator = require('mongoose-unique-validator');
 const atob = require('atob');
 const btoa = require('btoa');
 
@@ -38,6 +38,10 @@ const UserSchema = new Schema({
     userAgent: {
       type: String,
       required: true
+    },
+    creationDate: {
+      type: Date,
+      required: true
     }
   }]
 });
@@ -68,20 +72,27 @@ UserSchema.pre("save", function (next) {
 
 UserSchema.methods.generateAuthToken = async function (userAgent) {
   // Generate an auth token for the user
+    
   const user = this;
+  const user_id = this._id.toString();
+  const creationDate = new Date;
+
   const token = jwt.sign({
-    _id: user._id
+    _id: user_id,
+    creationDate : creationDate
   }, process.env.ACCESS_JWT_KEY, {
     expiresIn: '5m'
   });
   const refreshToken = jwt.sign({
-    _id: user._id
+    _id: user_id,
+    creationDate : creationDate
   }, process.env.REFRESH_JWT_KEY, {
     expiresIn: '1d'
   });
   user.refreshTokens = user.refreshTokens.concat({
     refreshToken,
-    userAgent
+    userAgent,
+    creationDate
   });
   await user.save();
   return token;

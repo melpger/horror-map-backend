@@ -52,9 +52,14 @@ exports.me = function (req, res, next) {
 // Logout user token
 exports.logout = async function (req, res, next) {
     try {
-        req.user.tokens = req.user.tokens.filter((token) => {
-            return token.token != req.token
+        //normally during logout, it is enough to delete the access token from the client side
+        //as added measure, generated access token has the same creation date with a refresh token
+        //so we need to delete the corresponding refresh token too
+        const tokenCreationDate = new Date(req.tokenCreationDate);
+        req.user.refreshTokens = req.user.refreshTokens.filter((refreshTokens) => {
+            return refreshTokens.creationDate.toString() != tokenCreationDate.toString()
         })
+
         await req.user.save()
         res.status(200).send({
             status: globalConst.STATUS.OK,
@@ -76,8 +81,10 @@ exports.logout = async function (req, res, next) {
 // Logout user all token
 exports.logoutall = async function (req, res, next) {
     try {
-        req.user.tokens.splice(0, req.user.tokens.length)
+        //remove all existing refresh tokens
+        req.user.refreshTokens.splice(0, req.user.refreshTokens.length)
         await req.user.save()
+
         res.status(200).send({
             status: globalConst.STATUS.OK,
             logout: 1,
@@ -100,7 +107,7 @@ exports.logoutallUsers = async function (req, res, next) {
     try {
         User.updateMany({}, {
             $set: {
-                tokens: []
+                refreshTokens: []
             }
         }).then(function (user) {
             res.status(200).send({
